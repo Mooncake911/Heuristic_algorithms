@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from windows import *
 from template import stop_event
+import gc
 
 
 def on_exit():
@@ -20,7 +21,6 @@ root.protocol('WM_DELETE_WINDOW', on_exit)
 
 # Зададим слить для вкладок
 style = ttk.Style()
-print(style.theme_names())
 style.theme_use('vista')
 style.configure('TNotebook', background='white')
 style.configure('TNotebook.Tab', foreground='red',  background="gray")

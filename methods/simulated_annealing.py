@@ -65,6 +65,6 @@ def annealing_algorithm(start_T, stop_T, coolingRatio, numberGeneration, graphPa
         return a.best_path, a.best_score
 
 
-'''# Запускаем метод имитации отжига
+"""# Запускаем метод имитации отжига
 print(annealing_algorithm(100, 1, 0.7, 10, [[226, 282, 117], [133, 219], [213]]))
-'''
+"""

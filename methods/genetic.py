@@ -156,7 +156,7 @@ class Genetic:
 
         with imageio.get_writer('g/genetic.gif', mode='I') as writer:
             for filename in snapshot_arr:
-                image = imageio.v2.imread(filename)
+                image = imageio.imread(filename)
                 writer.append_data(image)
 
         # Сохраняем таблицу

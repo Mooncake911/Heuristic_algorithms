@@ -81,19 +81,6 @@ class ShowResult:
 
 # region: /////-- ~Приложение выводящее результат в виде графа~ --\\\\\ #
 class ShowGraph:
-    class Point:
-        """ Внутренний класс определяющий параметры точки для отображения в canvas"""
-
-        def __init__(self, x, y, index, frame):
-            self.x = x
-            self.y = y
-            self.index = index
-            self.label = Label(frame, text="{}".format(self.index), font=('Helvetica bold', 7), bg="red")
-            self.label.place(x=x, y=y, anchor="center")
-
-        def delete_point(self) -> None:
-            self.label.destroy()
-
     def buttons_state(self, state) -> None:
         self.btn_del_all.configure(state=state)
         self.btn_del_one.configure(state=state)
@@ -102,7 +89,6 @@ class ShowGraph:
         """ Основной класс в котором прописана логика визуализации графа """
         self.points = []
         self.graphPaths = []
-        self.index = 0
         # Объявляем фреймы
         self.frame_btn = frame_btn
         self.frame_scroll = frame_scroll
@@ -123,76 +109,87 @@ class ShowGraph:
                                            editable_columns=["#3"])
         self.edge_table.pack(side=LEFT, fill=BOTH, expand=True)
 
-        # Кнопки для отрисовки и удаления точек
+        # Кнопки для взаимодействия пользователя с программой
         self.canvas.bind("<Button-1>", self.add_point)
+        self.canvas.bind("<B1-Motion>", self.on_button_motion)
+        self.point_size = 15
+
+        # Кнопки для удаления вершин
         self.btn_del_all = ttk.Button(self.frame_btn, text="Удалить всё", command=self.clear_points, state=NORMAL)
         self.btn_del_all.pack()
         self.btn_del_one = ttk.Button(self.frame_btn, text="Удалить последнюю", command=self.clear_point, state=NORMAL)
         self.btn_del_one.pack()
 
-    def draw_points(self, rout=None) -> None:
-        """ Рисует точки """
-        self.canvas.delete("all")
-        # Рисуем точки
-        for p in self.points:
-            self.canvas.create_oval(p.x - 15, p.y - 15, p.x + 15, p.y + 15, fill="red")
-        # Две вариации отображения рёбер (полный граф и Гамильтонов цикл)
-        if rout is None:
-            # Очищаем старые рёбра
-            for row in self.edge_table.get_children():
-                self.edge_table.delete(row)
-            # Рисуем новые
-            self.draw_lines()
-        else:
-            # Очищаем старые рёбра
-            for row in self.cycle_table.get_children():
-                self.cycle_table.delete(row)
-            # Рисуем новые
-            self.draw_cycle(rout)
-
     def draw_lines(self) -> None:
         """ Рисует полный граф """
+        # Очищаем старые значения из таблицы
+        self.canvas.delete("all")
+        for row in self.edge_table.get_children():
+            self.edge_table.delete(row)
+        # Добавляем новые
         for p1 in self.points:
-            for p2 in self.points[p1.index:]:
-                self.canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill="black")
-                edge_length = int(math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2))
-                self.edge_table.insert("", "end", values=(p1.index, p2.index, edge_length))
+            p1_index = self.points.index(p1) + 1
+            for p2 in self.points[p1_index:]:
+                p2_index = self.points.index(p2) + 1
+                self.canvas.create_line(p1[0], p1[1], p2[0], p2[1], fill="gray", capstyle=ROUND)
+                edge_length = int(math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2))
+                self.edge_table.insert("", "end", values=(p1_index, p2_index, edge_length))
+            self.canvas.create_oval(p1[0] - self.point_size, p1[1] - self.point_size,
+                                    p1[0] + self.point_size, p1[1] + self.point_size, fill='red')
+            self.canvas.create_text(p1[0], p1[1], text=p1_index, fill='black')
 
     def draw_cycle(self, route) -> None:
         """ Рисует цикл """
+        # Очищаем старые значения из таблицы
+        for row in self.cycle_table.get_children():
+            self.cycle_table.delete(row)
+        # Добавляем новые
         for i in range(len(route) - 1):
             from_ = min(route[i], route[i + 1])
             to_ = max(route[i], route[i + 1])
             p1 = self.points[from_]
             p2 = self.points[to_]
-            self.canvas.create_line(p1.x, p1.y, p2.x, p2.y, fill="red")
-            self.cycle_table.insert("", "end", values=(p1.index, p2.index, self.graphPaths[from_][to_ - from_ - 1]))
+            self.canvas.create_line(p1[0], p1[1], p2[0], p2[1], fill="red", width=2)
+            p1_index = self.points.index(p1) + 1
+            p2_index = self.points.index(p2) + 1
+            self.cycle_table.insert("", "end", values=(p1_index, p2_index, self.graphPaths[from_][to_ - from_ - 1]))
 
     def add_point(self, event) -> None:
         """ Добавляет 1 точку """
-        self.index += 1
-        x = event.x
-        y = event.y
-        self.points.append(self.Point(x, y, self.index, self.canvas))
-        self.draw_points()
-        self.buttons_state(NORMAL)
+        x, y = event.x, event.y
+        try:
+            item = self.canvas.find_closest(x, y)[0]
+            start_x, start_y = self.canvas.coords(item)[:2]
+            if max(abs(start_x - x), abs(start_y - y)) > self.point_size * 2:
+                self.points.append([x, y])
+        except IndexError:
+            self.points.append([x, y])
+            self.buttons_state(NORMAL)
+        self.draw_lines()
+
+    def on_button_motion(self, event) -> None:
+        item = self.canvas.find_closest(event.x, event.y)[0]
+        coords = min(self.points, key=lambda p: int(math.sqrt((p[0] - event.x) ** 2 + (p[1] - event.y) ** 2)))
+        # coords = self.canvas.coords(item)[:2]
+        # Перемещаем объект на новые координаты
+        p_index = self.points.index(coords)
+        self.canvas.move(item, event.x - coords[0], event.y - coords[1])
+        self.points[p_index] = [event.x, event.y]
+        self.draw_lines()
 
     def clear_points(self) -> None:
         """ Удаляет все точки """
-        self.index = 0
-        for p in self.points:
-            p.delete_point()
         self.points = []
-        self.draw_points()
+        self.canvas.delete("all")
+        self.draw_lines()
         self.buttons_state(DISABLED)
 
     def clear_point(self) -> None:
         """ Удаляет 1 точку """
-        self.index -= 1
-        self.points[-1].delete_point()
-        self.points = self.points[:-1]
-        self.draw_points()
-        if self.index == 0:
+        del self.points[-1]
+        self.canvas.delete("all")
+        self.draw_lines()
+        if not self.points:
             self.buttons_state(DISABLED)
 
     def prepare_graphPaths(self) -> None:
@@ -208,4 +205,5 @@ class ShowGraph:
                 amount_edges -= 1
                 values = [self.edge_table.item(row)["values"][2]]
         self.graphPaths.append(values)
+        print(self.graphPaths)
 # endregion

@@ -142,7 +142,7 @@ class Swarm:
 
         with imageio.get_writer('s/swarm.gif', mode='I') as writer:
             for filename in snapshot_arr:
-                image = imageio.v2.imread(filename)
+                image = imageio.imread(filename)
                 writer.append_data(image)
 
         # Сохраняем таблицу

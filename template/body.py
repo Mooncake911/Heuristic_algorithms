@@ -7,8 +7,6 @@ from template.all_functions import functions_arr
 
 # Алгоритмы которые неявно вызываются в ClickButton
 from methods import *
-
-# Общее событие прекращающее потоки
 stop_event = threading.Event()
 
 
@@ -67,7 +65,6 @@ class WidgetTemp:
 
     def checkButtonState(self) -> None:
         """ Функция отвечающая за асинхронные вызовы """
-        global stop_event
         while not stop_event.wait(0.5):
             # Проверка, что Spinbox и Combobox не пустые
             try:
@@ -125,7 +122,7 @@ class WidgetTemp:
                 graphPaths=self.a.graphPaths)
             # Выводим результат
             try:
-                self.a.draw_points(best_path)
+                self.a.draw_cycle(best_path)
             except IndexError:
                 pass
 

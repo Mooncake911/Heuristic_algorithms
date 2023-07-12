@@ -7,12 +7,20 @@ from template.all_functions import functions_arr
 
 # Алгоритмы которые неявно вызываются в ClickButton
 from methods import *
-stop_event = threading.Event()
+
+# Массив всех потоков и их стоп-событий
+threads = []
+stop_events = []
 
 
 class WidgetTemp:
     def __init__(self, root, main_title, img_title, table_title, algorithm):
-        threading.Thread(target=self.checkButtonState).start()
+        # Для каждого окна вызываем проверку на дурака (поток)
+        self.stop_event = threading.Event()
+        self.thread = threading.Thread(target=self.checkButtonState)
+        stop_events.append(self.stop_event)
+        threads.append(self.thread)
+
         # Какой алгоритм хотят вызвать
         self.algorithm = algorithm
         self.extremum_algorithms = ["genetic_algorithm", "swarm_algorithm"]
@@ -62,10 +70,11 @@ class WidgetTemp:
         for child in self.frame_input.winfo_children():
             if isinstance(child, ttk.Spinbox) or isinstance(child, ttk.Combobox):
                 self.widgets_arr.append(child)
+        self.thread.start()
 
     def checkButtonState(self) -> None:
         """ Функция отвечающая за асинхронные вызовы """
-        while not stop_event.wait(0.5):
+        while not self.stop_event.wait(0.5):
             # Проверка, что Spinbox и Combobox не пустые
             try:
                 current_input = sorted(len(widget.get()) for widget in self.widgets_arr)
@@ -79,7 +88,7 @@ class WidgetTemp:
                     self.btn_clean.configure(state=DISABLED)
                     self.btn_start.configure(state=DISABLED)
             except IndexError:
-                self.btn_clean.destroy()
+                self.btn_clean.destroy()    # для методов, где нет ввода
                 self.btn_start.configure(state=NORMAL)
 
     def cleanButton(self) -> None:

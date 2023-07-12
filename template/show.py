@@ -121,7 +121,7 @@ class ShowGraph:
         self.btn_del_one.pack()
 
     def draw_lines(self) -> None:
-        """ Рисует полный граф """
+        """ Рисует полный граф [после любого действия с окном canvas происходит его полная перерисовка]"""
         # Очищаем старые значения из таблицы
         self.canvas.delete("all")
         for row in self.edge_table.get_children():
@@ -141,15 +141,16 @@ class ShowGraph:
     def draw_cycle(self, route) -> None:
         """ Рисует цикл """
         # Очищаем старые значения из таблицы
-        for row in self.cycle_table.get_children():
+        for i, row in enumerate(self.cycle_table.get_children()):
             self.cycle_table.delete(row)
+            self.canvas.delete("red{0}".format(i))
         # Добавляем новые
         for i in range(len(route) - 1):
             from_ = min(route[i], route[i + 1])
             to_ = max(route[i], route[i + 1])
             p1 = self.points[from_]
             p2 = self.points[to_]
-            self.canvas.create_line(p1[0], p1[1], p2[0], p2[1], fill="red", width=2)
+            self.canvas.create_line(p1[0], p1[1], p2[0], p2[1], fill="red", width=2, tags="red{0}".format(i))
             p1_index = self.points.index(p1) + 1
             p2_index = self.points.index(p2) + 1
             self.cycle_table.insert("", "end", values=(p1_index, p2_index, self.graphPaths[from_][to_ - from_ - 1]))

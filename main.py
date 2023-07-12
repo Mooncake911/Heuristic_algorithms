@@ -1,16 +1,16 @@
 from tkinter import *
 from tkinter import ttk
 from windows import *
-from template import stop_event
-import gc
+from template import threads, stop_events
 
 
 def on_exit():
     """ Функция, которая завершает threading """
-    stop_event.set()
+    for event in stop_events:
+        event.set()
+    print(stop_events)
     print("Bye!")
-    root.destroy()
-    return 0
+    root.quit()
 
 
 # Создаётся окно пользователя
@@ -19,7 +19,7 @@ root.title("ALGORITHMS")
 root.geometry('1050x670')
 root.protocol('WM_DELETE_WINDOW', on_exit)
 
-# Зададим слить для вкладок
+# Зададим стиль для вкладок
 style = ttk.Style()
 style.theme_use('vista')
 style.configure('TNotebook', background='white')
@@ -52,3 +52,10 @@ ntb.add(frame_ant, text="Муравьиный алгоритм")
 Ant_Window(frame_ant)
 
 root.mainloop()
+root.update()
+print("Tkinter finished")
+
+# Дожидаемся закрытия потоков
+for thread in threads:
+    thread.join()
+print(threads)
